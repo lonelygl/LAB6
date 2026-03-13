@@ -3,7 +3,7 @@ project(ufc_db CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Find libpq (PostgreSQL C library)
+
 find_package(PostgreSQL REQUIRED)
 
 add_executable(ufc_db main.cpp)
