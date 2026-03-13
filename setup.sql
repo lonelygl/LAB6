@@ -1,8 +1,3 @@
--- ============================================================
---  UFC Database Setup Script (idempotent)
--- ============================================================
-
--- ROLES
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ufc_admin') THEN
     CREATE ROLE ufc_admin LOGIN PASSWORD 'admin123';
@@ -15,7 +10,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- TABLES
+
 CREATE TABLE IF NOT EXISTS app_users (
     username  VARCHAR(60) PRIMARY KEY,
     password  VARCHAR(255) NOT NULL,
@@ -43,20 +38,17 @@ ALTER TABLE fights DROP CONSTRAINT IF EXISTS winner_is_fighter;
 ALTER TABLE fights ADD CONSTRAINT winner_is_fighter
     CHECK (winner = '' OR winner = fighter_1 OR winner = fighter_2);
 
--- PERMISSIONS
+
 GRANT USAGE ON SCHEMA public TO ufc_admin, ufc_guest;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE fights TO ufc_admin;
 GRANT USAGE, SELECT, UPDATE ON SEQUENCE fights_id_seq TO ufc_admin;
 GRANT SELECT ON TABLE fights TO ufc_guest;
 GRANT SELECT, INSERT ON TABLE app_users TO ufc_admin, ufc_guest;
 
--- DEFAULT ACCOUNTS
+
 INSERT INTO app_users(username, password, role) VALUES('admin', 'adminpass', 'admin') ON CONFLICT (username) DO NOTHING;
 INSERT INTO app_users(username, password, role) VALUES('guest', 'guestpass', 'guest') ON CONFLICT (username) DO NOTHING;
 
--- (no default test data — import via JSON if needed)
-
--- STORED PROCEDURES & FUNCTIONS
 
 CREATE OR REPLACE PROCEDURE sp_add_fight(
     p_date VARCHAR, p_fight_time VARCHAR, p_event VARCHAR, p_location VARCHAR,
@@ -110,7 +102,6 @@ BEGIN
 END;
 $BODY$;
 
--- Uses DELETE (not TRUNCATE) so ufc_admin does not need table ownership
 CREATE OR REPLACE PROCEDURE sp_clear_table() LANGUAGE plpgsql AS $BODY$
 BEGIN
     DELETE FROM fights;
@@ -164,7 +155,6 @@ BEGIN
 END;
 $BODY$;
 
--- SECURITY DEFINER so ufc_admin can create PG users without superuser
 CREATE OR REPLACE PROCEDURE sp_create_user(p_username VARCHAR, p_password VARCHAR, p_role VARCHAR)
 LANGUAGE plpgsql SECURITY DEFINER AS $BODY$
 DECLARE v_grant_role VARCHAR;
@@ -179,7 +169,6 @@ BEGIN
 END;
 $BODY$;
 
--- GRANTS
 GRANT EXECUTE ON PROCEDURE sp_add_fight(VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR) TO ufc_admin;
 GRANT EXECUTE ON PROCEDURE sp_update_fight(INT,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR,VARCHAR) TO ufc_admin;
 GRANT EXECUTE ON PROCEDURE sp_delete_by_id(INT) TO ufc_admin;
